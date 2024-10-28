@@ -2,6 +2,8 @@ import copy
 import sys
 from dataclasses import dataclass
 from typing import List,Tuple,Optional
+from colorama import Fore, Back, Style, init
+
 
 import numpy as np
 
@@ -17,13 +19,26 @@ class Sequence:
 class MatrixField:
     def __init__(self):
         self.score:Optional[int]=None
-        self.previous_field:Optional[List[Tuple[int,int]]]=None
+        self.previous_field:Optional[List[Tuple[int,int]]]=[]
 def print_matrix(matrix):
     for row in range(len(matrix)):
         for column in range(len(matrix[row])):
-            sys.stdout.write(str(matrix[row][column].score)+' ')
-        print(' ')
+            print(f"{matrix[row][column].score:>{4}}",end='')
+        print()
 
+def print_matrix_backtracking(matrix):
+    colored_fields=set()
+    for row in range(len(matrix)):
+        for column in range(len(matrix[row])):
+            if matrix[row][column].previous_field is not None:
+                colored_fields.update(matrix[row][column].previous_field)
+    for row in range(len(matrix)):
+        for column in range(len(matrix[row])):
+            if (row,column) in colored_fields:
+                print(f"{Fore.RED}{matrix[row][column].score:>{4}}",end="")
+            else:
+                print(f"{matrix[row][column].score:>4}",end="")
+        print()
 def NoneType_aware_max(numbers):
     not_None_numbers=[]
     for number in numbers:
@@ -91,17 +106,31 @@ def fill_matrix(matrix):
                 continue
             fill_cell(matrix,row,column)
 
+def backtrack(matrix:List[List[MatrixField]],row:int=-1,column:int=-1,list_of_aligments=[[]],sequence_index=0)->List[List[Tuple[int,int]]]:
+    if(row==-1 or column==-1):
+        row=len(matrix)-1
+        column=len(matrix[0])-1
+    list_of_aligments[sequence_index].append((row,column))
+    cnt=0
+    index=len(list_of_aligments[sequence_index])
+    for field_coordinates in matrix[row][column].previous_field:
+        if(cnt>0):
+            list_of_aligments.append(copy.deepcopy(list_of_aligments[sequence_index][0:sequence_index+1]))
+        backtrack(matrix,field_coordinates[0],field_coordinates[1],list_of_aligments,len(list_of_aligments)-1)
+        cnt+=1
+    return list_of_aligments
+
+
 
 
 #check_parameters()
 #file_path=sys.argv[1]
 
-copy.copy()
 file_path='test.fasta'
 fasta_content=load_from_file(file_path)
 sequences=extract_to_object(fasta_content)
 matrix=initialize_matrix(sequences)
 fill_matrix(matrix)
-print (matrix)
-print_matrix(matrix)
-
+print_matrix_backtracking(matrix)
+list_of_aligments=backtrack(matrix)
+print(list_of_aligments)
