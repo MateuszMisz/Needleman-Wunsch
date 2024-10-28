@@ -106,19 +106,16 @@ def fill_matrix(matrix):
                 continue
             fill_cell(matrix,row,column)
 
-def backtrack(matrix:List[List[MatrixField]],row:int=-1,column:int=-1,list_of_aligments=[[]],sequence_index=0)->List[List[Tuple[int,int]]]:
-    if(row==-1 or column==-1):
-        row=len(matrix)-1
-        column=len(matrix[0])-1
-    list_of_aligments[sequence_index].append((row,column))
-    cnt=0
-    index=len(list_of_aligments[sequence_index])
-    for field_coordinates in matrix[row][column].previous_field:
-        if(cnt>0):
-            list_of_aligments.append(copy.deepcopy(list_of_aligments[sequence_index][0:sequence_index+1]))
-        backtrack(matrix,field_coordinates[0],field_coordinates[1],list_of_aligments,len(list_of_aligments)-1)
-        cnt+=1
-    return list_of_aligments
+def backtrack(matrix):
+    alignement=[]
+    row=len(matrix)-1
+    column=len(matrix[0])-1
+    while(True):
+        alignement.append((row,column))
+        try:
+            row,column=matrix[row][column].previous_field[0]
+        except:
+            return alignement
 
 
 
@@ -132,5 +129,5 @@ sequences=extract_to_object(fasta_content)
 matrix=initialize_matrix(sequences)
 fill_matrix(matrix)
 print_matrix_backtracking(matrix)
-list_of_aligments=backtrack(matrix)
-print(list_of_aligments)
+alignement=backtrack(matrix)
+print(alignement)
