@@ -2,7 +2,6 @@ import copy
 import sys
 from dataclasses import dataclass
 from typing import List,Tuple,Optional
-from colorama import Fore, Back, Style, init
 
 
 import numpy as np
@@ -35,7 +34,7 @@ def print_matrix_backtracking(matrix):
     for row in range(len(matrix)):
         for column in range(len(matrix[row])):
             if (row,column) in colored_fields:
-                print(f"{Fore.RED}{matrix[row][column].score:>{4}}",end="")
+                print(f"{matrix[row][column].score:>{4}}",end="")
             else:
                 print(f"{matrix[row][column].score:>4}",end="")
         print()
@@ -108,26 +107,67 @@ def fill_matrix(matrix):
 
 def backtrack(matrix):
     alignement=[]
+
     row=len(matrix)-1
     column=len(matrix[0])-1
     while(True):
+        tmp_score=[]
         alignement.append((row,column))
-        try:
-            row,column=matrix[row][column].previous_field[0]
-        except:
+        if matrix[row][column].previous_field is None or matrix[row][column].previous_field==[]:
             return alignement
+        for field in matrix[row][column].previous_field:
+            tmp_score.append(matrix[field[0]][field[1]].score)
+        for field in matrix[row][column].previous_field:
+            if matrix[field[0]][field[1]].score==NoneType_aware_max(tmp_score):
+                row,column=field
+def is_going_left(current:Tuple[int,int],next:Tuple[int,int])->bool:
+    if current[0]==next[0] and current[1]==next[1]+1:
+        return True
+    else: return False
+def is_going_up(current:Tuple[int,int],next:Tuple[int,int])->bool:
+    if current[0]==next[0]+1 and current[1]==next[1]:
+        return True
+    else:
+        return False
+def is_going_across(current:Tuple[int,int],next:Tuple[int,int])->bool:
+    if current[0]==next[0]+1 and current[1]==next[1]+1:
+        return True
+    else:
+        return False
+def backtracking_to_sequences(alignement)->Tuple:
+    global sequences
+    top_sequence=""
+    left_sequence=""
+    for i in range(len(alignement)-1):
+        if is_going_left(alignement[i],alignement[i+1]):
+            left_sequence += "-"
+            top_sequence += sequences[1].sequence[alignement[i][1] - 1]
 
+        elif is_going_up(alignement[i],alignement[i+1]):
+            top_sequence += "-"
+            left_sequence += sequences[0].sequence[alignement[i][0] - 1]
+        elif is_going_across(alignement[i],alignement[i+1]):
+            left_sequence+=sequences[0].sequence[alignement[i][0]-1]
+            top_sequence+=sequences[1].sequence[alignement[i][1]-1]
 
+    return left_sequence[::-1],top_sequence[::-1]
+check_parameters()
+file_path=sys.argv[1]
+def generate_output(output_sequences:Tuple[str],score:int=0):
+    sequences=f"sequence2:\t{output_sequences[0]}\nsequence1:\t{output_sequences[1]}"
+    sequences_and_score=f"{sequences}\n{score}"
+    return sequences_and_score
+def get_output_score(matrix):
+    return matrix[len(matrix)-1][len(matrix[0])-1].score
+def generate_dev_output():
 
-
-#check_parameters()
-#file_path=sys.argv[1]
-
-file_path='test.fasta'
 fasta_content=load_from_file(file_path)
 sequences=extract_to_object(fasta_content)
 matrix=initialize_matrix(sequences)
 fill_matrix(matrix)
 print_matrix_backtracking(matrix)
 alignement=backtrack(matrix)
+output_sequences=backtracking_to_sequences(alignement)
 print(alignement)
+print(output_sequences)
+print(generate_output(output_sequences,get_output_score(matrix)))
