@@ -2,15 +2,11 @@ import copy
 import sys
 from dataclasses import dataclass
 from typing import List,Tuple,Optional
-
+import argparse
 
 import numpy as np
 
-scores={
-    'match':1,
-    'mismatch':-1,
-    'gap':-2
-}
+
 @dataclass()
 class Sequence:
     name:str
@@ -151,16 +147,40 @@ def backtracking_to_sequences(alignement)->Tuple:
             top_sequence+=sequences[1].sequence[alignement[i][1]-1]
 
     return left_sequence[::-1],top_sequence[::-1]
-check_parameters()
-file_path=sys.argv[1]
+
 def generate_output(output_sequences:Tuple[str],score:int=0):
     sequences=f"sequence2:\t{output_sequences[0]}\nsequence1:\t{output_sequences[1]}"
-    sequences_and_score=f"{sequences}\n{score}"
+    sequences_and_score=f"{sequences}\nscore: {score}"
     return sequences_and_score
 def get_output_score(matrix):
     return matrix[len(matrix)-1][len(matrix[0])-1].score
-def generate_dev_output():
+def generate_dev_output(alignement,output_sequences,score:int=0):
+    global sequences
+    global scores
+    return f"""seq1: {sequences[0].sequence}\nseq2: {sequences[1].sequence}
+    match: {scores['match']}, mismatch: {scores['mismatch']}, gap: {scores['gap']}
+    alignement:{alignement}
+    sequence1:\t {output_sequences[0]}
+    sequence2:\t {output_sequences[1]}
+    score: {score}
+    """
+def handle_arguments():
+    """handles script arguments,
+    returns Tuple of input file path and dictionary
+    with scores for match,mismatch and gap"""
+    argparser = argparse.ArgumentParser(description='needleman_wunsch algorithm')
+    argparser.add_argument('input_file', type=str, help='input file(.fasta)')
+    argparser.add_argument('--match', type=int, default=1, help='match score')
+    argparser.add_argument('--mismatch', type=int, default=-1, help='match score')
+    argparser.add_argument('--gap', type=int, default=-2, help='gap score')
+    argparser.add_argument('-o','--output', type=str, help='output file',required=True)
+    args = argparser.parse_args()
+    return args
 
+args=handle_arguments()
+file_path=args.input_file
+scores={'match':args.match,'mismatch':args.mismatch,'gap':args.gap}
+output_path=args.output
 fasta_content=load_from_file(file_path)
 sequences=extract_to_object(fasta_content)
 matrix=initialize_matrix(sequences)
@@ -168,6 +188,6 @@ fill_matrix(matrix)
 print_matrix_backtracking(matrix)
 alignement=backtrack(matrix)
 output_sequences=backtracking_to_sequences(alignement)
-print(alignement)
-print(output_sequences)
-print(generate_output(output_sequences,get_output_score(matrix)))
+with open(output_path,'w') as output_file:
+    output_file.write(generate_output(output_sequences,get_output_score(matrix)))
+print(generate_dev_output(alignement,output_sequences,get_output_score(matrix)))
